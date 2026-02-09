@@ -15,8 +15,8 @@ contract EscrowContract {
   error EscrowNotFound();
 
   event EscrowCreated(uint256 indexed id, address indexed buyer, address indexed seller, address arbiter);
-  event EscrowAccepted(uint256 indexed id);
-  event EscrowCanceled(uint256 indexed id);
+  event EscrowAccepted(uint256 indexed id, address indexed seller);
+  event EscrowCanceled(uint256 indexed id, address indexed buyer);
   event EscrowReleased(uint256 indexed id);
   event EscrowRefunded(uint256 indexed id);
   event EscrowDisputed(uint256 indexed id);
@@ -91,7 +91,7 @@ contract EscrowContract {
     e.state = EscrowState.Funded;
     e.startedAt = block.timestamp;
 
-    emit EscrowAccepted(_id);
+    emit EscrowAccepted(_id, e.seller);
   }
 
   function cancelEscrow(uint256 _id) external escrowExists(_id) onlyBuyer(_id) {
@@ -104,7 +104,7 @@ contract EscrowContract {
     if (!ok) revert TransferFailed();
     e.price = 0;
 
-    emit EscrowCanceled(_id);
+    emit EscrowCanceled(_id, e.buyer);
   }
 
   function releaseEscrow(uint256 _id) external escrowExists(_id) onlyBuyer(_id) {
