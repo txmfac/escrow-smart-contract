@@ -20,7 +20,7 @@ contract EscrowContract {
   struct Escrow {
     address buyer;
     address seller;
-    address arbriter;
+    address arbiter;
     uint256 price;
     uint256 created;
     EscrowState state;
@@ -49,7 +49,7 @@ contract EscrowContract {
     escrows[id] = Escrow({
         buyer: msg.sender,
         seller: _seller,
-        arbriter: _arbriter,
+        arbriter: _arbiter,
         price: msg.value,
         created: block.timestamp,
         state: EscrowState.Funded
