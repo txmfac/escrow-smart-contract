@@ -4,6 +4,7 @@ pragma solidity ^0.8.20;
 contract EscrowContract {
   error NotBuyer();
   error NotSeller();
+  error NotArbiter();
   error NotEscrowActor();
   error BadState();
   error ZeroAddress();
@@ -52,7 +53,7 @@ contract EscrowContract {
   }
 
   modifier onlyArbiter(uint256 id) {
-    if (msg.sender != escrows[id].arbiter) revert NotSeller();
+    if (msg.sender != escrows[id].arbiter) revert NotArbiter();
     _;
   }
 
