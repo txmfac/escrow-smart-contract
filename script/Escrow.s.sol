@@ -1,18 +1,16 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.13;
+pragma solidity ^0.8.20;
 
 import {Script} from "forge-std/Script.sol";
-import {Counter} from "../src/Counter.sol";
+import {EscrowContract} from "../src/Escrow.sol";
 
-contract CounterScript is Script {
-    Counter public counter;
-
-    function setUp() public {}
+contract DeployEscrowScript is Script {
+    EscrowContract public escrow;
 
     function run() public {
         vm.startBroadcast();
 
-        counter = new Counter();
+        escrow = new EscrowContract();
 
         vm.stopBroadcast();
     }
