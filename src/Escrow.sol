@@ -34,7 +34,7 @@ contract EscrowContract {
     address seller;
     address arbiter;
     uint256 price;
-    uint256 created;
+    uint256 startedAt;
     uint256 timeout;
     EscrowState state;
   }
@@ -71,7 +71,7 @@ contract EscrowContract {
         arbiter: _arbiter,
         price: msg.value,
         timeout: _timeout,
-        created: 0,
+        startedAt: 0,
         state: EscrowState.Created
     });
 
@@ -83,7 +83,7 @@ contract EscrowContract {
 
     if (e.state != EscrowState.Created) revert BadState();
     e.state = EscrowState.Funded;
-    e.created = block.timestamp;
+    e.startedAt = block.timestamp;
 
     emit EscrowAccepted(_id);
   }
@@ -115,7 +115,7 @@ contract EscrowContract {
   function refundEscrow(uint256 _id) external onlyBuyer(_id) {
     Escrow storage e = escrows[_id];
 
-    if (block.timestamp < e.created + e.timeout) revert CantRefundYet();
+    if (block.timestamp < e.startedAt + e.timeout) revert CantRefundYet();
     if (e.state != EscrowState.Funded) revert BadState();
     e.state = EscrowState.Refunded;
     (bool ok,) = msg.sender.call{value: e.price}("");
