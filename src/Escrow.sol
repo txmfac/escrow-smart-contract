@@ -93,6 +93,7 @@ contract EscrowContract {
 
     if (e.state != EscrowState.Created) revert BadState();
     e.state = EscrowState.Canceled;
+    e.price = 0;
 
     (bool ok,) = msg.sender.call{value: e.price}("");
     if (!ok) revert TransferFailed();
