@@ -60,7 +60,6 @@ contract EscrowContract {
   function releaseEscrow(uint256 _id) external onlyBuyer(_id) {
     Escrow storage e = escrows[_id];
 
-    if (msg.sender != e.buyer) revert NotBuyer();
     if (e.state != EscrowState.Funded) revert BadState();
     e.state = EscrowState.Released;
     (bool ok,) = e.seller.call{value: e.price}("");
@@ -70,7 +69,6 @@ contract EscrowContract {
   function refundEscrow(uint256 _id) external onlyBuyer(_id) {
     Escrow storage e = escrows[_id];
 
-    if (msg.sender != e.buyer) revert NotBuyer();
     if (e.state != EscrowState.Funded) revert BadState();
     e.state = EscrowState.Refunded;
     (bool ok,) = msg.sender.call{value: e.price}("");
