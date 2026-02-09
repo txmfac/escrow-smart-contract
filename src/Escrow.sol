@@ -12,6 +12,7 @@ contract EscrowContract {
   error TransferFailed();
   error CantRefundYet();
   error TimeoutTooLow();
+  error EscrowNotFound();
 
   event EscrowCreated(uint256 indexed id, address indexed buyer, address indexed seller, address arbiter);
   event EscrowAccepted(uint256 indexed id);
@@ -42,6 +43,11 @@ contract EscrowContract {
   uint256 public escrowId;
 
   mapping(uint256 => Escrow) public escrows;
+
+  modifier escrowExists(uint256 id) {
+    if (escrows[id].buyer == address(0)) revert EscrowNotFound();
+    _;
+  }
 
   modifier onlyBuyer(uint256 id) {
     if (msg.sender != escrows[id].buyer) revert NotBuyer();
@@ -78,7 +84,7 @@ contract EscrowContract {
     emit EscrowCreated(id, msg.sender, _seller, _arbiter);
   }
 
-  function acceptEscrow(uint256 _id) external onlySeller(_id) {
+  function acceptEscrow(uint256 _id) external escrowExists(_id) onlySeller(_id) {
     Escrow storage e = escrows[_id];
 
     if (e.state != EscrowState.Created) revert BadState();
@@ -88,7 +94,7 @@ contract EscrowContract {
     emit EscrowAccepted(_id);
   }
 
-  function cancelEscrow(uint256 _id) external onlyBuyer(_id) {
+  function cancelEscrow(uint256 _id) external escrowExists(_id) onlyBuyer(_id) {
     Escrow storage e = escrows[_id];
 
     if (e.state != EscrowState.Created) revert BadState();
@@ -101,7 +107,7 @@ contract EscrowContract {
     emit EscrowCanceled(_id);
   }
 
-  function releaseEscrow(uint256 _id) external onlyBuyer(_id) {
+  function releaseEscrow(uint256 _id) external escrowExists(_id) onlyBuyer(_id) {
     Escrow storage e = escrows[_id];
 
     if (e.state != EscrowState.Funded) revert BadState();
@@ -112,7 +118,7 @@ contract EscrowContract {
     emit EscrowReleased(_id);
   }
 
-  function refundEscrow(uint256 _id) external onlyBuyer(_id) {
+  function refundEscrow(uint256 _id) external escrowExists(_id) onlyBuyer(_id) {
     Escrow storage e = escrows[_id];
 
     if (block.timestamp < e.startedAt + e.timeout) revert CantRefundYet();
@@ -124,7 +130,7 @@ contract EscrowContract {
     emit EscrowRefunded(_id);
   }
 
-  function disputeEscrow(uint256 _id) external {
+  function disputeEscrow(uint256 _id) external escrowExists(_id) {
     Escrow storage e = escrows[_id];
 
     if (msg.sender != e.buyer && msg.sender != e.seller) revert NotEscrowActor();
@@ -134,7 +140,7 @@ contract EscrowContract {
     emit EscrowDisputed(_id);
   }
 
-  function arbiterDecisionRelease(uint256 _id) external onlyArbiter(_id) {
+  function arbiterDecisionRelease(uint256 _id) external escrowExists(_id) onlyArbiter(_id) {
     Escrow storage e = escrows[_id];
 
     if (e.state != EscrowState.Disputed) revert BadState();
@@ -145,7 +151,7 @@ contract EscrowContract {
     emit EscrowReleased(_id);
   }
 
-  function arbiterDecisionRefund(uint256 _id) external onlyArbiter(_id) {
+  function arbiterDecisionRefund(uint256 _id) external escrowExists(_id) onlyArbiter(_id) {
     Escrow storage e = escrows[_id];
 
     if (e.state != EscrowState.Disputed) revert BadState();
