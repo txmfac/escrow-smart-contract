@@ -13,6 +13,7 @@ contract EscrowContract {
   error CantRefundYet();
   error TimeoutTooLow();
   error EscrowNotFound();
+  error DirectEthNotAllowed();
 
   event EscrowCreated(uint256 indexed id, address indexed buyer, address indexed seller, address arbiter);
   event EscrowAccepted(uint256 indexed id, address indexed seller);
@@ -161,4 +162,12 @@ contract EscrowContract {
 
     emit EscrowRefunded(_id);
   }
+
+  receive() external payable {
+    revert DirectEthNotAllowed();
+  }
+
+  fallback() external payable {
+    revert DirectEthNotAllowed();
+  }  
 }
