@@ -9,6 +9,10 @@ contract EscrowContract {
   error ZeroAmount();
   error TransferFailed();
 
+  event EscrowCreated(uint256 indexed id, address indexed buyer, address indexed seller, address arbiter);
+  event EscrowReleased(uint256 indexed id); 
+  event EscrowRefunded(uint256 indexed id);
+
   enum EscrowState {
     Funded,
     Released,
@@ -40,8 +44,8 @@ contract EscrowContract {
     _;
   }
 
-  function createEscrow(address payable _seller, address _arbriter) external payable returns (uint256 id) {
-    if (_seller == address(0) || _arbriter == address(0)) revert ZeroAddress();
+  function createEscrow(address payable _seller, address _arbiter) external payable returns (uint256 id) {
+    if (_seller == address(0) || _arbiter == address(0)) revert ZeroAddress();
     if (msg.value == 0) revert ZeroAmount();
 
     id = escrowId++;
@@ -49,11 +53,13 @@ contract EscrowContract {
     escrows[id] = Escrow({
         buyer: msg.sender,
         seller: _seller,
-        arbriter: _arbiter,
+        arbiter: _arbiter,
         price: msg.value,
         created: block.timestamp,
         state: EscrowState.Funded
     });
+
+    emit EscrowCreated(id, msg.sender, _seller, _arbiter);
   }
 
   function releaseEscrow(uint256 _id) external onlyBuyer(_id) {
@@ -63,6 +69,8 @@ contract EscrowContract {
     e.state = EscrowState.Released;
     (bool ok,) = e.seller.call{value: e.price}("");
     if (!ok) revert TransferFailed();
+
+    emit EscrowReleased(_id);
   }
 
   function refundEscrow(uint256 _id) external onlyBuyer(_id) {
@@ -72,5 +80,7 @@ contract EscrowContract {
     e.state = EscrowState.Refunded;
     (bool ok,) = msg.sender.call{value: e.price}("");
     if (!ok) revert TransferFailed();
+
+    emit EscrowRefunded(_id);
   }
 }
