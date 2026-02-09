@@ -70,7 +70,6 @@ contract EscrowContract {
         seller: _seller,
         arbiter: _arbiter,
         price: msg.value,
-        created: block.timestamp,
         timeout: _timeout,
         state: EscrowState.Created
     });
@@ -83,6 +82,7 @@ contract EscrowContract {
 
     if (e.state != EscrowState.Created) revert BadState();
     e.state = EscrowState.Funded;
+    e.created = block.timestamp;
 
     emit EscrowAccepted(_id);
   }
