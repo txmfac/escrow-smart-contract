@@ -12,12 +12,13 @@ contract EscrowContract {
   event EscrowCreated(uint256 indexed id, address indexed buyer, address indexed seller, address arbiter);
   event EscrowReleased(uint256 indexed id); 
   event EscrowRefunded(uint256 indexed id);
+  event EscrowDisputed(uint256 indexed id);
 
   enum EscrowState {
     Funded,
     Released,
     Refunded,
-    Conflict,
+    Disputed,
     Cancelled
   }
 
@@ -41,6 +42,11 @@ contract EscrowContract {
 
   modifier onlySeller(uint256 id) {
     if (msg.sender != escrows[id].seller) revert NotSeller();
+    _;
+  }
+
+  modifier onlyArbiter(uint256 id) {
+    if (msg.sender != escrows[id].arbiter) revert NotSeller();
     _;
   }
 
@@ -79,6 +85,37 @@ contract EscrowContract {
     if (e.state != EscrowState.Funded) revert BadState();
     e.state = EscrowState.Refunded;
     (bool ok,) = msg.sender.call{value: e.price}("");
+    if (!ok) revert TransferFailed();
+
+    emit EscrowRefunded(_id);
+  }
+
+  function disputeEscrow(uint256 _id) external onlyBuyer(_id) {
+    Escrow storage e = escrows[_id];
+
+    if (e.state != EscrowState.Funded) revert BadState();
+    e.state = EscrowState.Disputed;
+
+    emit EscrowDisputed(_id);
+  }
+
+  function arbiterDecisionRelease(uint256 _id) external onlyArbiter(_id) {
+    Escrow storage e = escrows[_id];
+
+    if (e.state != EscrowState.Disputed) revert BadState();
+    e.state = EscrowState.Released;
+    (bool ok,) = e.seller.call{value: e.price}("");
+    if (!ok) revert TransferFailed();
+
+    emit EscrowReleased(_id);
+  }
+
+  function arbiterDecisionRefund(uint256 _id) external onlyArbiter(_id) {
+    Escrow storage e = escrows[_id];
+
+    if (e.state != EscrowState.Disputed) revert BadState();
+    e.state = EscrowState.Refunded;
+    (bool ok,) = e.buyer.call{value: e.price}("");
     if (!ok) revert TransferFailed();
 
     emit EscrowRefunded(_id);
