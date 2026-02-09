@@ -71,6 +71,7 @@ contract EscrowContract {
         arbiter: _arbiter,
         price: msg.value,
         timeout: _timeout,
+        created: 0,
         state: EscrowState.Created
     });
 
