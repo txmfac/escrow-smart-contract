@@ -10,9 +10,8 @@ contract EscrowContract {
   error TransferFailed();
 
   enum EscrowState {
-    Created,
-    Released,
     Funded,
+    Released,
     Refunded,
     Conflict,
     Cancelled
