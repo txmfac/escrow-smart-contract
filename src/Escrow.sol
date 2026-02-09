@@ -4,17 +4,22 @@ pragma solidity ^0.8.20;
 contract EscrowContract {
   error NotBuyer();
   error NotSeller();
+  error NotEscrowActor();
   error BadState();
   error ZeroAddress();
   error ZeroAmount();
   error TransferFailed();
+  error CantRefundYet();
+  error TimeoutTooLow();
 
   event EscrowCreated(uint256 indexed id, address indexed buyer, address indexed seller, address arbiter);
-  event EscrowReleased(uint256 indexed id); 
+  event EscrowAccepted(uint256 indexed id, address indexed seller); 
+  event EscrowReleased(uint256 indexed id);
   event EscrowRefunded(uint256 indexed id);
   event EscrowDisputed(uint256 indexed id);
 
   enum EscrowState {
+    Created,
     Funded,
     Released,
     Refunded,
@@ -28,6 +33,7 @@ contract EscrowContract {
     address arbiter;
     uint256 price;
     uint256 created;
+    uint256 timeout;
     EscrowState state;
   }
 
@@ -50,9 +56,10 @@ contract EscrowContract {
     _;
   }
 
-  function createEscrow(address payable _seller, address _arbiter) external payable returns (uint256 id) {
+  function createEscrow(address payable _seller, address _arbiter, uint256 _timeout) external payable returns (uint256 id) {
     if (_seller == address(0) || _arbiter == address(0)) revert ZeroAddress();
     if (msg.value == 0) revert ZeroAmount();
+    if (_timeout < 3 days) revert TimeoutTooLow();
 
     id = escrowId++;
 
@@ -62,10 +69,20 @@ contract EscrowContract {
         arbiter: _arbiter,
         price: msg.value,
         created: block.timestamp,
-        state: EscrowState.Funded
+        timeout: _timeout,
+        state: EscrowState.Created
     });
 
     emit EscrowCreated(id, msg.sender, _seller, _arbiter);
+  }
+
+  function acceptEscrow(uint256 _id) external onlySeller(_id) {
+    Escrow storage e = escrows[_id];
+
+    if (e.state != EscrowState.Created) revert BadState();
+    e.state = EscrowState.Funded;
+
+    emit EscrowAccepted(_id, msg.sender);
   }
 
   function releaseEscrow(uint256 _id) external onlyBuyer(_id) {
@@ -82,6 +99,7 @@ contract EscrowContract {
   function refundEscrow(uint256 _id) external onlyBuyer(_id) {
     Escrow storage e = escrows[_id];
 
+    if (block.timestamp < e.created + e.timeout) revert CantRefundYet();
     if (e.state != EscrowState.Funded) revert BadState();
     e.state = EscrowState.Refunded;
     (bool ok,) = msg.sender.call{value: e.price}("");
@@ -90,9 +108,10 @@ contract EscrowContract {
     emit EscrowRefunded(_id);
   }
 
-  function disputeEscrow(uint256 _id) external onlyBuyer(_id) {
+  function disputeEscrow(uint256 _id) external {
     Escrow storage e = escrows[_id];
 
+    if (msg.sender != e.buyer && msg.sender != e.seller) revert NotEscrowActor();
     if (e.state != EscrowState.Funded) revert BadState();
     e.state = EscrowState.Disputed;
 
