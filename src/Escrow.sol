@@ -11,7 +11,7 @@ contract EscrowContract {
   error ZeroAmount();
   error TransferFailed();
   error CantRefundYet();
-  error TimeoutTooLow();
+  error WrongTimeout();
   error EscrowNotFound();
   error DirectEthNotAllowed();
 
@@ -68,7 +68,7 @@ contract EscrowContract {
   function createEscrow(address payable _seller, address _arbiter, uint256 _timeout) external payable returns (uint256 id) {
     if (_seller == address(0) || _arbiter == address(0)) revert ZeroAddress();
     if (msg.value == 0) revert ZeroAmount();
-    if (_timeout < 3 days) revert TimeoutTooLow();
+    if (_timeout < 3 days || _timeout > 30 days) revert WrongTimeout();
 
     id = escrowId++;
 
