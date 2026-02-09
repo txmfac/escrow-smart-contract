@@ -14,7 +14,8 @@ contract EscrowContract {
   error TimeoutTooLow();
 
   event EscrowCreated(uint256 indexed id, address indexed buyer, address indexed seller, address arbiter);
-  event EscrowAccepted(uint256 indexed id, address indexed seller); 
+  event EscrowAccepted(uint256 indexed id);
+  event EscrowCanceled(uint256 indexed id);
   event EscrowReleased(uint256 indexed id);
   event EscrowRefunded(uint256 indexed id);
   event EscrowDisputed(uint256 indexed id);
@@ -25,7 +26,7 @@ contract EscrowContract {
     Released,
     Refunded,
     Disputed,
-    Cancelled
+    Canceled
   }
 
   struct Escrow {
@@ -83,7 +84,19 @@ contract EscrowContract {
     if (e.state != EscrowState.Created) revert BadState();
     e.state = EscrowState.Funded;
 
-    emit EscrowAccepted(_id, msg.sender);
+    emit EscrowAccepted(_id);
+  }
+
+  function cancelEscrow(uint256 _id) external onlyBuyer(_id) {
+    Escrow storage e = escrows[_id];
+
+    if (e.state != EscrowState.Created) revert BadState();
+    e.state = EscrowState.Canceled;
+
+    (bool ok,) = msg.sender.call{value: e.price}("");
+    if (!ok) revert TransferFailed();
+
+    emit EscrowCanceled(_id);
   }
 
   function releaseEscrow(uint256 _id) external onlyBuyer(_id) {
