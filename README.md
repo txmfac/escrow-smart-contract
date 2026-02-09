@@ -176,8 +176,8 @@ Arbiter resolves dispute in favor of the buyer.
 ## Events
 
 - `EscrowCreated(id, buyer, seller, arbiter)`
-- `EscrowAccepted(id)`
-- `EscrowCanceled(id)`
+- `EscrowAccepted(id, seller)`
+- `EscrowCanceled(id, buyer)`
 - `EscrowReleased(id)`
 - `EscrowRefunded(id)`
 - `EscrowDisputed(id)`
